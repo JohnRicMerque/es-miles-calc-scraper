@@ -97,9 +97,60 @@ function delay(time) {
 
     await page.click('button[aria-label="Calculate"]');
     console.log('Submitted the form...');
-    await page.waitForNavigation({ timeout: 30000 });
     console.log('Waiting for results...');
 
+
+
+    // NEXT PAGE
+    const waitForSelectors = Promise.race([
+        page.waitForSelector('.tabs', { timeout: 90000 }),
+        page.waitForSelector('h1:not([class]):not([id])', { timeout: 90000 })
+    ]);
+
+    await waitForSelectors;
+
+    let flattenedData = [];
+
+    const isResults = await page.$('.tabs');
+    const isAccessDenied = await page.$('h1:not([class]):not([id])');
+
+    if (isResults) {
+        const pageCardData = await page.$$eval('.tabs', (cards) => {
+            return cards.map(card => {
+                // Access the selected tab directly in the browser context
+                const selectedTab = card.querySelector('a[aria-selected="true"]');
+                const action = selectedTab ? selectedTab.querySelector('.miles-calculator-result__tab-button--text').textContent.trim() : null;
+                return { action };
+            });
+        });
+    
+        // Ensure pageCardData is defined and has the expected structure
+        if (pageCardData) {
+            flattenedData = pageCardData.map(card => ({
+                action: card.action,
+            }));
+        }
+    }
+    
+    
+    else if (isAccessDenied) {
+        const errorData = {
+            action: "Access Denied"
+        };
+
+        flattenedData.push(errorData);
+    }
+
+    if (flattenedData.length > 0) {
+        const worksheet = XLSX.utils.json_to_sheet(flattenedData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Flight Data');
+        XLSX.writeFile(workbook, 'flightData.xlsx');
+        console.log('Data successfully written to flightData.xlsx');
+    } else {
+        console.log('No data found to write.');
+    }
+    
 
 
 
