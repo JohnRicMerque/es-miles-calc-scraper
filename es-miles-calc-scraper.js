@@ -120,7 +120,35 @@ function delay(time) {
                 // Access the selected tab directly in the browser context
                 const selectedTab = card.querySelector('a[aria-selected="true"]');
                 const action = selectedTab ? selectedTab.querySelector('.miles-calculator-result__tab-button--text').textContent.trim() : null;
-                return { action };
+    
+                // Retrieve details for each branded fare type
+                const fareTypes = ['special', 'saver', 'flex', 'flexplus'];
+                const fareDetails = fareTypes.map(fareType => {
+                    const fareDiv = card.querySelector(`.miles-card__card.miles-card__ek-premiumeconomy-${fareType}`);
+                    
+                    if (fareDiv) {
+                        const milesContent = fareDiv.querySelector('.miles-card__content__miles');
+                        const skywardMiles = milesContent ? milesContent.querySelector('.miles-card__skywards-miles span')?.textContent.trim() : 'N/A';
+                        const tierMiles = milesContent ? milesContent.querySelector('.miles-card__tier-miles span')?.textContent.trim() : 'N/A';
+    
+                        return {
+                            brandedFare: fareType.charAt(0).toUpperCase() + fareType.slice(1),  // Capitalize fare type
+                            skywardMiles,
+                            tierMiles
+                        };
+                    } else {
+                        return {
+                            brandedFare: fareType.charAt(0).toUpperCase() + fareType.slice(1),
+                            skywardMiles: 'N/A',
+                            tierMiles: 'N/A'
+                        };
+                    }
+                });
+    
+                return {
+                    action,
+                    fareDetails
+                };
             });
         });
     
@@ -128,9 +156,11 @@ function delay(time) {
         if (pageCardData) {
             flattenedData = pageCardData.map(card => ({
                 action: card.action,
+                fareDetails: card.fareDetails  // Include the fare details in the flattened data
             }));
         }
     }
+    
     
     
     else if (isAccessDenied) {
@@ -150,101 +180,6 @@ function delay(time) {
     } else {
         console.log('No data found to write.');
     }
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // const comboboxSelector = 'div[data-testid="combobox_Going to"]';
-
-    // // Wait for the element to appear on the page
-    // await page.waitForSelector(comboboxSelector);
-
-    // // Click to open the combobox
-    // await page.click(comboboxSelector);
-    // console.log('Clicked the combobox...');
-    // const inputSelector = `${comboboxSelector} input.input-field__input`;
-
-    // await page.click(inputSelector)
-    // await page.keyboard.down('Control');
-    // await page.keyboard.press('A');
-    // await page.keyboard.up('Control');
-    // await page.keyboard.press('Backspace');
-    // await page.type(inputSelector, leavingFrom);
-    // await delay(500);
-    // await page.keyboard.press('Enter');
-    // console.log('Flying with: ' + leavingFrom);
-
-    // await delay(1000);
-
-
-
-
-
-
-
-    // await page.keyboard.down('ArrowDown');
-    // await page.keyboard.press('Enter');
-    // await delay(500);
-
-    // await page.keyboard.down('Control');
-    // await page.keyboard.press('A');
-    // await page.keyboard.up('Control');
-    // await page.keyboard.press('Backspace');
-    // await page.type('.js-origin-dropdown input', flyingWith);
-    // await delay(500);
-    // await page.keyboard.press('Enter');
-    // console.log('Flying with: ' + flyingWith);
-
-    // await delay(1000);
-
-    // // leaving from input
-    // await page.click('.js-origin-dropdown input');
-    // await delay(500);
-    // await page.keyboard.down('Control');
-    // await page.keyboard.press('A');
-    // await page.keyboard.up('Control');
-    // await page.keyboard.press('Backspace');
-    // await page.type('.js-origin-dropdown input', leavingFrom);
-    // await delay(500);
-    // await page.keyboard.press('Enter');
-    // console.log('Leaving from: ' + leavingFrom);
-
-    // await delay(1000);
-
-    // Select the parent div
-    // const parentDivSelector = '.skywards-miles-calculator__search-widget__wrapper';
-    // const dropdownSelectors = await page.$$(`${parentDivSelector} select`);
-
-    // const dropdownValues = ['Option1', 'Option2', 'Option3']; // Replace with the actual values you want to select
-
-    // // Loop through each dropdown and select a value
-    // for (let i = 0; i < dropdownSelectors.length; i++) {
-    //     const dropdown = dropdownSelectors[i];
-    //     const valueToSelect = dropdownValues[i]; // Assume each dropdown has a corresponding value in dropdownValues
-
-    //     await dropdown.select(valueToSelect);
-    //     console.log(`Selected ${valueToSelect} in dropdown ${i + 1}`);
-    //     await delay(500); // Add a slight delay between selections if necessary
-    // }
 
     await browser.close();
 
