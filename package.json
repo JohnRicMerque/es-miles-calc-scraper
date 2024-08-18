@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "puppeteer": "^23.1.0",
+    "xlsx": "^0.18.5"
+  },
+  "scripts": {
+    "start": "node es-miles-calc-scraper.js"
+  }
+}

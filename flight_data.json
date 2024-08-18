@@ -1,0 +1,164 @@
+[
+  {
+    "result": "trip",
+    "price": "1,420.39",
+    "currency": "EUR",
+    "flightData": [
+      {
+        "originAirport": "FRA",
+        "destinationAirport": "JFK",
+        "date": "Wednesday, 01 Jan 25",
+        "departureTime": "09:35",
+        "arrivalTime": "18:55",
+        "supDays": null,
+        "travelTime": "15 hrs 20 mins",
+        "connections": 1
+      },
+      {
+        "originAirport": "JFK",
+        "destinationAirport": "FRA",
+        "date": "Saturday, 01 Feb 25",
+        "departureTime": "22:20",
+        "arrivalTime": "10:35",
+        "supDays": 2,
+        "travelTime": "30 hrs 15 mins",
+        "connections": 1
+      }
+    ]
+  },
+  {
+    "result": "trip",
+    "price": "1,420.39",
+    "currency": "EUR",
+    "flightData": [
+      {
+        "originAirport": "FRA",
+        "destinationAirport": "JFK",
+        "date": "Wednesday, 01 Jan 25",
+        "departureTime": "09:35",
+        "arrivalTime": "18:55",
+        "supDays": null,
+        "travelTime": "15 hrs 20 mins",
+        "connections": 1
+      },
+      {
+        "originAirport": "JFK",
+        "destinationAirport": "FRA",
+        "date": "Saturday, 01 Feb 25",
+        "departureTime": "22:20",
+        "arrivalTime": "12:55",
+        "supDays": 2,
+        "travelTime": "32 hrs 35 mins",
+        "connections": 1
+      }
+    ]
+  },
+  {
+    "result": "trip",
+    "price": "1,697.54",
+    "currency": "EUR",
+    "flightData": [
+      {
+        "originAirport": "FRA",
+        "destinationAirport": "JFK",
+        "date": "Wednesday, 01 Jan 25",
+        "departureTime": "09:35",
+        "arrivalTime": "08:15",
+        "supDays": 1,
+        "travelTime": "28 hrs 40 mins",
+        "connections": 2
+      },
+      {
+        "originAirport": "JFK",
+        "destinationAirport": "FRA",
+        "date": "Saturday, 01 Feb 25",
+        "departureTime": "22:20",
+        "arrivalTime": "10:35",
+        "supDays": 2,
+        "travelTime": "30 hrs 15 mins",
+        "connections": 1
+      }
+    ]
+  },
+  {
+    "result": "trip",
+    "price": "1,697.54",
+    "currency": "EUR",
+    "flightData": [
+      {
+        "originAirport": "FRA",
+        "destinationAirport": "JFK",
+        "date": "Wednesday, 01 Jan 25",
+        "departureTime": "09:35",
+        "arrivalTime": "08:15",
+        "supDays": 1,
+        "travelTime": "28 hrs 40 mins",
+        "connections": 2
+      },
+      {
+        "originAirport": "JFK",
+        "destinationAirport": "FRA",
+        "date": "Saturday, 01 Feb 25",
+        "departureTime": "22:20",
+        "arrivalTime": "12:55",
+        "supDays": 2,
+        "travelTime": "32 hrs 35 mins",
+        "connections": 1
+      }
+    ]
+  },
+  {
+    "result": "trip",
+    "price": "1,697.54",
+    "currency": "EUR",
+    "flightData": [
+      {
+        "originAirport": "FRA",
+        "destinationAirport": "JFK",
+        "date": "Wednesday, 01 Jan 25",
+        "departureTime": "09:35",
+        "arrivalTime": "13:55",
+        "supDays": 1,
+        "travelTime": "34 hrs 20 mins",
+        "connections": 2
+      },
+      {
+        "originAirport": "JFK",
+        "destinationAirport": "FRA",
+        "date": "Saturday, 01 Feb 25",
+        "departureTime": "22:20",
+        "arrivalTime": "10:35",
+        "supDays": 2,
+        "travelTime": "30 hrs 15 mins",
+        "connections": 1
+      }
+    ]
+  },
+  {
+    "result": "trip",
+    "price": "1,697.54",
+    "currency": "EUR",
+    "flightData": [
+      {
+        "originAirport": "FRA",
+        "destinationAirport": "JFK",
+        "date": "Wednesday, 01 Jan 25",
+        "departureTime": "09:35",
+        "arrivalTime": "13:55",
+        "supDays": 1,
+        "travelTime": "34 hrs 20 mins",
+        "connections": 2
+      },
+      {
+        "originAirport": "JFK",
+        "destinationAirport": "FRA",
+        "date": "Saturday, 01 Feb 25",
+        "departureTime": "22:20",
+        "arrivalTime": "10:35",
+        "supDays": 2,
+        "travelTime": "30 hrs 15 mins",
+        "connections": 1
+      }
+    ]
+  }
+]
