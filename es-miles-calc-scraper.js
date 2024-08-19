@@ -88,28 +88,59 @@ function delay(time) {
     if (isResults) {
         const pageCardData = await page.$$eval('.tabs', (cards) => {
             return cards.map(card => {
-                const selectedTab = card.querySelector('a[aria-selected="true"]');
-                const action = selectedTab ? selectedTab.querySelector('.miles-calculator-result__tab-button--text').textContent.trim() : null;
-                const fareTypes = ['special', 'saver', 'flex', 'flexplus'];
-                const fareDetails = fareTypes.map(fareType => {
-                    const fareDiv = card.querySelector(`.miles-card__card.miles-card__ek-premiumeconomy-${fareType}`);
-                    if (fareDiv) {
-                        const milesContent = fareDiv.querySelector('.miles-card__content__miles');
-                        const skywardMiles = milesContent ? milesContent.querySelector('.miles-card__skywards-miles span')?.textContent.trim() : 'N/A';
-                        const tierMiles = milesContent ? milesContent.querySelector('.miles-card__tier-miles span')?.textContent.trim() : 'N/A';
-                        return {
-                            brandedFare: fareType.charAt(0).toUpperCase() + fareType.slice(1),
-                            skywardMiles,
-                            tierMiles
-                        };
-                    } else {
-                        return {
-                            brandedFare: fareType.charAt(0).toUpperCase() + fareType.slice(1),
-                            skywardMiles: 'N/A',
-                            tierMiles: 'N/A'
-                        };
-                    }
+                const actionElement = card.querySelector('a[aria-selected="true"]');
+                const action = actionElement ? actionElement.querySelector('.miles-calculator-result__tab-button--text').textContent.trim() : null;
+                console.log('Action:', action);
+
+                const fareDetails = Array.from(card.querySelectorAll('.miles-calculator-result__card-wrapper')).flatMap(wrapper => {
+                    const fareTypes = ['special', 'saver', 'flex', 'flexplus'];
+                    return fareTypes.map(fareType => {
+                        const fareDiv = wrapper.querySelector(`.miles-card__card.miles-card__ek-premiumeconomy-${fareType}`);
+                        if (fareDiv) {
+                            console.log(`${fareType} fareDiv exists`);
+                            const milesContent = fareDiv.querySelector('.miles-card__content__miles');
+                            console.log('milesContent exists');
+                            let skywardMiles = 'N/A';
+                            let tierMiles = 'N/A';
+
+                            // Extract Skywards Miles
+                            const skywardsMilesTitle = milesContent.querySelector('.miles-card__skywards-title');
+                            if (skywardsMilesTitle && skywardsMilesTitle.textContent.trim() === 'Skywards Miles') {
+                                const nextSkywardsMilesDiv = skywardsMilesTitle.nextElementSibling;
+                                if (nextSkywardsMilesDiv && nextSkywardsMilesDiv.classList.contains('miles-card__skywards-miles')) {
+                                    const skywardsMilesSpan = nextSkywardsMilesDiv.querySelector('span');
+                                    if (skywardsMilesSpan) {
+                                        skywardMiles = skywardsMilesSpan.textContent.trim();
+                                    }
+                                }
+                            }
+                            console.log(`Skywards Miles (${fareType}): ${skywardMiles}`);
+
+                            // Extract Tier Miles
+                            const tierMilesDiv = milesContent.querySelector('.miles-card__tier-miles');
+                            if (tierMilesDiv) {
+                                const tierMilesSpan = tierMilesDiv.querySelector('span');
+                                if (tierMilesSpan) {
+                                    tierMiles = tierMilesSpan.textContent.trim();
+                                }
+                            }
+                            console.log(`Tier Miles (${fareType}): ${tierMiles}`);
+
+                            return {
+                                brandedFare: fareType.charAt(0).toUpperCase() + fareType.slice(1),
+                                skywardMiles,
+                                tierMiles
+                            };
+                        } else {
+                            return {
+                                brandedFare: fareType.charAt(0).toUpperCase() + fareType.slice(1),
+                                skywardMiles: 'N/Aa',
+                                tierMiles: 'N/Aa'
+                            };
+                        }
+                    });
                 });
+
                 return {
                     action,
                     fareDetails
@@ -132,6 +163,7 @@ function delay(time) {
             });
         }
     } else if (isAccessDenied) {
+        console.log('Access denied');
         flattenedData.push({
             action: "Access Denied",
             leavingFrom: leavingFrom,
