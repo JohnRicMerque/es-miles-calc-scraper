@@ -191,6 +191,7 @@ function readExcelData(filePath) {
                                 date: oneWayOrRoundtrip,
                                 cabinClass: cabinClass,
                                 brandedFare: fareDetail.brandedFare,
+                                skywardTier: emiratesSkywardsTier,
                                 skywardMiles: fareDetail.skywardMiles,
                                 tierMiles: fareDetail.tierMiles
                             });
@@ -227,9 +228,9 @@ function readExcelData(filePath) {
                     'Flying With': item.flyingWith,
                     'Leaving from': item.leavingFrom,
                     'Going to': item.goingTo,
-                    'Date (OW/RT)': item.oneWayOrRoundtrip,
+                    'Date (OW/RT)': item.date,
                     'Cabin Class': item.cabinClass,
-                    'Emirates Skywards Tier': item.emiratesSkywardsTier,
+                    'Emirates Skywards Tier': item.skywardTier,
                     'Branded Fare': item.brandedFare,
                     'Skyward Miles': item.skywardMiles,
                     'Tier Miles': item.tierMiles
@@ -238,7 +239,7 @@ function readExcelData(filePath) {
                 XLSX.utils.book_append_sheet(workbook, worksheet, action);
             });
 
-            const fileName = `skywardsMilesData`;
+            const fileName = `skywardsMilesData.xlsx`;
             XLSX.writeFile(workbook, fileName);
             console.log(`Excel file written to ${fileName}`);
             
