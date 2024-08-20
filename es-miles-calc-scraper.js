@@ -41,7 +41,7 @@ function delay(time) {
     return new Promise(resolve => setTimeout(resolve, time));
 }
 
-// Function to read and validate Excel data
+// Function to read and validate Excel data returns Json
 function readExcelData(filePath) {
     const workbook = XLSX.readFile(filePath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -71,6 +71,8 @@ function readExcelData(filePath) {
 
         const page = await browser.newPage();
         await page.setDefaultNavigationTimeout(60000);
+
+        let allData = []; // Array to store all results
 
         for (const rowData of excelData) {
             const flyingWith = rowData.flyingWith;
@@ -183,8 +185,11 @@ function readExcelData(filePath) {
                         card.fareDetails.forEach(fareDetail => {
                             flattenedData.push({
                                 action: card.action,
+                                flyingWith: flyingWith,
                                 leavingFrom: leavingFrom,
                                 goingTo: goingTo,
+                                date: oneWayOrRoundtrip,
+                                cabinClass: cabinClass,
                                 brandedFare: fareDetail.brandedFare,
                                 skywardMiles: fareDetail.skywardMiles,
                                 tierMiles: fareDetail.tierMiles
@@ -204,38 +209,44 @@ function readExcelData(filePath) {
                 });
             }
 
-            // Write to Excel
-            if (flattenedData.length > 0) {
-                const workbook = XLSX.utils.book_new();
-
-                const actions = [...new Set(flattenedData.map(item => item.action))];
-
-                actions.forEach(action => {
-                    const dataForSheet = flattenedData.filter(item => item.action === action);
-                    const sheetData = dataForSheet.map(item => ({
-                        'Action': item.action,
-                        'Flying With': flyingWith,
-                        'Leaving from': item.leavingFrom,
-                        'Going to': item.goingTo,
-                        'Date (OW/RT)': oneWayOrRoundtrip,
-                        'Cabin Class': cabinClass,
-                        'Emirates Skywards Tier': emiratesSkywardsTier,
-                        'Branded Fare': item.brandedFare,
-                        'Skyward Miles': item.skywardMiles,
-                        'Tier Miles': item.tierMiles
-                    }));
-                    const worksheet = XLSX.utils.json_to_sheet(sheetData);
-                    XLSX.utils.book_append_sheet(workbook, worksheet, action);
-                });
-
-                const fileName = `${leavingFrom}_${goingTo}.xlsx`;
-                XLSX.writeFile(workbook, fileName);
-                console.log(`Excel file written to ${fileName}`);
-            }
+            // Accumulate data for each row
+            allData = allData.concat(flattenedData);
         }
 
-        await browser.close();
-    } catch (error) {
+        // Write all accumulated data to a single Excel file
+
+        if (allData.length > 0) {
+            const workbook = XLSX.utils.book_new();
+
+            const actions = [...new Set(allData.map(item => item.action))];
+
+            actions.forEach(action => {
+                const dataForSheet = allData.filter(item => item.action === action);
+                const sheetData = dataForSheet.map(item => ({
+                    'Action': item.action,
+                    'Flying With': item.flyingWith,
+                    'Leaving from': item.leavingFrom,
+                    'Going to': item.goingTo,
+                    'Date (OW/RT)': item.oneWayOrRoundtrip,
+                    'Cabin Class': item.cabinClass,
+                    'Emirates Skywards Tier': item.emiratesSkywardsTier,
+                    'Branded Fare': item.brandedFare,
+                    'Skyward Miles': item.skywardMiles,
+                    'Tier Miles': item.tierMiles
+                }));
+                const worksheet = XLSX.utils.json_to_sheet(sheetData);
+                XLSX.utils.book_append_sheet(workbook, worksheet, action);
+            });
+
+            const fileName = `skywardsMilesData`;
+            XLSX.writeFile(workbook, fileName);
+            console.log(`Excel file written to ${fileName}`);
+            
+            await browser.close();
+        }
+    }
+
+     catch (error) {
         console.error('Error:', error);
     }
 })();
