@@ -10,6 +10,7 @@ async function handleCookiesPopup(page) {
     }
 }
 
+// Function to enter data into input fields
 async function enterDataIntoCombobox(page, dataTestId, inputData) {
     const comboboxSelector = `div[data-testid="${dataTestId}"]`;
     await page.waitForSelector(comboboxSelector);
@@ -22,6 +23,7 @@ async function enterDataIntoCombobox(page, dataTestId, inputData) {
     await delay(1000);
 }
 
+// Function to select an option from a dropdown menu
 async function selectComboboxOption(page, comboboxTestId, optionText) {
     await page.click(`div[data-testid="${comboboxTestId}"]`);
     await page.waitForSelector('button.auto-suggest__item', { visible: true });
@@ -50,9 +52,10 @@ function delay(time) {
 
     const flyingWith = 'Emirates';
     const leavingFrom = 'ABJ';
-    const goingTo = 'ABV';
+    const goingTo = 'ADD';
     const cabinClass = 'Economy';
     const emiratesSkywardsTier = 'Blue';
+    const oneWayOrRoundtrip = "One Way"
 
     const homeUrl = 'https://www.emirates.com/ph/english/skywards/miles-calculator/';
     await page.goto(homeUrl);
@@ -60,9 +63,18 @@ function delay(time) {
     await delay(1000);
 
     await handleCookiesPopup(page);
-    await page.click('input.radio-button__input#OW0');
-    await delay(500);
-    console.log('Clicked Oneway...');
+    // Click the appropriate radio button based on the oWorRoundtrip variable
+    if (oneWayOrRoundtrip === "One Way") {
+        await page.click('input.radio-button__input#OW0');
+        await delay(500);
+        console.log('Clicked Oneway...');
+    } else if (oneWayOrRoundtrip === "Round Trip") {
+        await page.click('input.radio-button__input#RT1');
+        await delay(500);
+        console.log('Clicked Oneway...');
+    }
+    
+    
 
     await selectComboboxOption(page, "combobox_Flying with", flyingWith);
     await enterDataIntoCombobox(page, "combobox_Leaving from", leavingFrom);
@@ -84,7 +96,12 @@ function delay(time) {
 
     const isResults = await page.$('.tabs');
     const isAccessDenied = await page.$('h1:not([class]):not([id])');
+    
+    // Wait for the results page to load
+    await page.waitForSelector('.skywards-miles-calculator__search-result.miles-calculator-result__section', { visible: true }); // Wait for the specific results section to be visible
+    
 
+    // Data Scraping
     if (isResults) {
         const pageCardData = await page.$$eval('.tabs', (cards) => {
             return cards.map(card => {
@@ -92,17 +109,17 @@ function delay(time) {
                 const action = actionElement ? actionElement.querySelector('.miles-calculator-result__tab-button--text').textContent.trim() : null;
                 console.log('Action:', action);
 
-                const fareDetails = Array.from(card.querySelectorAll('.miles-calculator-result__card-wrapper')).flatMap(wrapper => {
+                const fareDetails = Array.from(document.querySelectorAll('.miles-calculator-result__card-wrapper')).flatMap(wrapper => {
                     const fareTypes = ['special', 'saver', 'flex', 'flexplus'];
                     return fareTypes.map(fareType => {
-                        const fareDiv = wrapper.querySelector(`.miles-card__card.miles-card__ek-premiumeconomy-${fareType}`);
+                        const fareDiv = wrapper.querySelector(`.miles-card__card.miles-card__ek-economy-${fareType}`);
                         if (fareDiv) {
                             console.log(`${fareType} fareDiv exists`);
                             const milesContent = fareDiv.querySelector('.miles-card__content__miles');
                             console.log('milesContent exists');
                             let skywardMiles = 'N/A';
                             let tierMiles = 'N/A';
-
+                
                             // Extract Skywards Miles
                             const skywardsMilesTitle = milesContent.querySelector('.miles-card__skywards-title');
                             if (skywardsMilesTitle && skywardsMilesTitle.textContent.trim() === 'Skywards Miles') {
@@ -115,17 +132,14 @@ function delay(time) {
                                 }
                             }
                             console.log(`Skywards Miles (${fareType}): ${skywardMiles}`);
-
+                
                             // Extract Tier Miles
-                            const tierMilesDiv = milesContent.querySelector('.miles-card__tier-miles');
+                            const tierMilesDiv = milesContent.querySelector('.miles-card__tier-miles .miles-card__skywards-miles span');
                             if (tierMilesDiv) {
-                                const tierMilesSpan = tierMilesDiv.querySelector('span');
-                                if (tierMilesSpan) {
-                                    tierMiles = tierMilesSpan.textContent.trim();
-                                }
+                                tierMiles = tierMilesDiv.textContent.trim();
                             }
                             console.log(`Tier Miles (${fareType}): ${tierMiles}`);
-
+                
                             return {
                                 brandedFare: fareType.charAt(0).toUpperCase() + fareType.slice(1),
                                 skywardMiles,
@@ -134,12 +148,15 @@ function delay(time) {
                         } else {
                             return {
                                 brandedFare: fareType.charAt(0).toUpperCase() + fareType.slice(1),
-                                skywardMiles: 'N/Aa',
-                                tierMiles: 'N/Aa'
+                                skywardMiles: 'N/A',
+                                tierMiles: 'N/A'
                             };
                         }
                     });
                 });
+                
+                console.log(fareDetails);
+                
 
                 return {
                     action,
@@ -174,6 +191,7 @@ function delay(time) {
         });
     }
 
+    // Write to Excel
     if (flattenedData.length > 0) {
         const workbook = XLSX.utils.book_new();
 
@@ -182,8 +200,13 @@ function delay(time) {
         actions.forEach(action => {
             const dataForSheet = flattenedData.filter(item => item.action === action);
             const sheetData = dataForSheet.map(item => ({
+                'Action': item.action,
+                'Flying With': flyingWith,
                 'Leaving from': item.leavingFrom,
                 'Going to': item.goingTo,
+                'Date (OW/Rt)': oneWayOrRoundtrip,
+                'Cabin Class': cabinClass,
+                'Emirates Skywards Tier': emiratesSkywardsTier,
                 'Branded Fare': item.brandedFare,
                 'Skyward Miles': item.skywardMiles,
                 'Tier Miles': item.tierMiles
