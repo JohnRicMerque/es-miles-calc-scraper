@@ -15,14 +15,12 @@ async function handleCookiesPopup(page) {
 // Function to enter data into input fields
 async function enterDataIntoCombobox(page, dataTestId, inputData) {
     const comboboxSelector = `div[data-testid="${dataTestId}"]`;
-    await page.waitForSelector(comboboxSelector);
-    await page.click(comboboxSelector);
-    const inputSelector = `${comboboxSelector} input.input-field__input`;
-    await page.type(inputSelector, inputData);
+    const inputLocator = await page.locator(comboboxSelector).click;
+    // const inputSelector = `${comboboxSelector} input.input-field__input`;
+    await inputLocator.fill(inputData);
     await delay(500);
     await page.keyboard.press('Enter');
     console.log(`${dataTestId}: ${inputData}`);
-    await delay(1000);
 }
 
 // Function to select an option from a dropdown menu
