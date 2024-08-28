@@ -20,11 +20,7 @@ async function enterDataIntoCombobox(page, dataTestId, inputData, maxRetries = 3
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             // Wait for the combobox and click it
-            await page.waitForSelector(comboboxSelector);
-            await page.click(comboboxSelector);
-
-            // Clear existing text (optional)
-            await page.click(inputSelector, { clickCount: 3 });
+            await page.locator(inputSelector).click({ clickCount: 3 });
             await page.keyboard.press('Backspace');
 
             // Type the input data
@@ -58,18 +54,38 @@ async function enterDataIntoCombobox(page, dataTestId, inputData, maxRetries = 3
 
 
 // Function to select an option from a dropdown menu
+// async function selectComboboxOption(page, comboboxTestId, optionText) {
+//     await page.click(`div[data-testid="${comboboxTestId}"]`);
+//     await page.waitForSelector('button.auto-suggest__item', { visible: true });
+//     await page.evaluate((text) => {
+//         const options = Array.from(document.querySelectorAll('button.auto-suggest__item'));
+//         const option = options.find(el => el.textContent.trim() === text);
+//         if (option) {
+//             option.click();
+//         }
+//     }, optionText);
+//     await delay(1000);
+// }
 async function selectComboboxOption(page, comboboxTestId, optionText) {
     await page.click(`div[data-testid="${comboboxTestId}"]`);
     await page.waitForSelector('button.auto-suggest__item', { visible: true });
     await page.evaluate((text) => {
         const options = Array.from(document.querySelectorAll('button.auto-suggest__item'));
-        const option = options.find(el => el.textContent.trim() === text);
+        const cleanedText = text.trim();
+        const option = options.find(el => {
+            let optionText = el.textContent.trim();
+            if (optionText.includes('Class')) {
+                optionText = optionText.replace(/Class/g, '').replace(/\s+/g, '');
+            }
+            return optionText === cleanedText;
+        });
         if (option) {
             option.click();
         }
     }, optionText);
     await delay(1000);
 }
+
 
 function delay(time) {
     return new Promise(resolve => setTimeout(resolve, time));
@@ -93,18 +109,40 @@ function readExcelData(filePath) {
     return jsonData;
 }
 
+
 (async () => {
+    const browser = await puppeteer.launch({
+        headless: false,
+        // devtools: true,
+        defaultViewport: null,
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--disable-gpu',
+            '--window-size=1920x1080',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
+            '--disable-web-security',
+            '--disable-features=IsolateOrigins',
+            '--disable-site-isolation-trials',
+            '--disable-features=BlockInsecurePrivateNetworkRequests'
+        ],
+    });
+
     try {
         const excelFilePath = 'inputData.xlsx'; // Replace with your actual Excel file path
         const excelData = readExcelData(excelFilePath);
-
-        const browser = await puppeteer.launch({
-            headless: false,
-            defaultViewport: null,
-        });
-
         const page = await browser.newPage();
         await page.setDefaultNavigationTimeout(60000);
+        const homeUrl = 'https://www.emirates.com/ph/english/skywards/miles-calculator/';
+        await page.goto(homeUrl);
+        await page.waitForSelector('.skywards-miles-calculator__search-widget__wrapper', { visible: true });
+        console.log('Navigated to Emirates mileage calculator...');
+        await delay(250);
+        await handleCookiesPopup(page);
 
         let allData = []; // Array to store all results
 
@@ -115,14 +153,6 @@ function readExcelData(filePath) {
             const cabinClass = rowData.cabinClass;
             const emiratesSkywardsTier = rowData.emiratesSkywardsTier;
             const oneWayOrRoundtrip = rowData.oneWayOrRoundtrip;
-
-            const homeUrl = 'https://www.emirates.com/ph/english/skywards/miles-calculator/';
-            await page.goto(homeUrl);
-            await page.waitForSelector('.skywards-miles-calculator__search-widget__wrapper', { visible: true });
-            console.log('Navigated to Emirates mileage calculator...');
-            await delay(250);
-
-            await handleCookiesPopup(page);
 
             // Click the appropriate radio button based on the oneWayOrRoundtrip variable
             if (oneWayOrRoundtrip === "One Way") {
@@ -157,11 +187,11 @@ function readExcelData(filePath) {
             const isAccessDenied = await page.$('h1:not([class]):not([id])');
 
             // Wait for the results page to load
-            await page.waitForSelector('.skywards-miles-calculator__search-result.miles-calculator-result__section', { visible: true }); // Wait for the specific results section to be visible
+            await page.waitForSelector('.skywards-miles-calculator__search-result.miles-calculator-result__section', { visible: true });
 
             // Data Scraping
             if (isResults) {
-                const pageCardData = await page.$$eval('.tabs', (cards) => {
+                const pageCardData = await page.$$eval('.tabs', (cards, cabinClass) => {
                     return cards.map(card => {
                         const actionElement = card.querySelector('a[aria-selected="true"]');
                         const action = actionElement ? actionElement.querySelector('.miles-calculator-result__tab-button--text').textContent.trim() : null;
@@ -169,7 +199,8 @@ function readExcelData(filePath) {
                         const fareDetails = Array.from(document.querySelectorAll('.miles-calculator-result__card-wrapper')).flatMap(wrapper => {
                             const fareTypes = ['special', 'saver', 'flex', 'flexplus'];
                             return fareTypes.map(fareType => {
-                                const fareDiv = wrapper.querySelector(`.miles-card__card.miles-card__ek-economy-${fareType}`);
+                                // Here we strictly use input data for cabin class i.e. premiumeconomy must have no space thus the regex, input must not have Class words in excel, it was handled in the input for Cabin Class in the form page
+                                const fareDiv = wrapper.querySelector(`.miles-card__card.miles-card__ek-${cabinClass.toLowerCase().replace(/\s+/g, '')}-${fareType}`);
                                 if (fareDiv) {
                                     const milesContent = fareDiv.querySelector('.miles-card__content__miles');
                                     let skywardMiles = 'N/A';
@@ -213,7 +244,7 @@ function readExcelData(filePath) {
                             fareDetails
                         };
                     });
-                });
+                }, cabinClass);
 
                 if (pageCardData) {
                     pageCardData.forEach(card => {
@@ -247,6 +278,7 @@ function readExcelData(filePath) {
 
             // Accumulate data for each row
             allData = allData.concat(flattenedData);
+            await page.locator('a[data-id="pagebody_link"][data-link="Back to results"]').click();
         }
 
         // Write all accumulated data to a single Excel file
@@ -278,11 +310,13 @@ function readExcelData(filePath) {
             XLSX.writeFile(workbook, fileName);
             console.log(`Excel file written to ${fileName}`);
             
-            await browser.close();
+            
         }
     }
-
      catch (error) {
         console.error('Error:', error);
+        await browser.close();
+    } finally {
+        await browser.close();
     }
 })();
