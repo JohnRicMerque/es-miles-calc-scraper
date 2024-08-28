@@ -13,23 +13,76 @@ async function handleCookiesPopup(page) {
 }
 
 // Function to enter data into input fields
+// async function enterDataIntoCombobox(page, dataTestId, inputData, maxRetries = 3) {
+//     const comboboxSelector = `div[data-testid="${dataTestId}"]`;
+//     const inputSelector = `${comboboxSelector} input.input-field__input`;
+
+//     for (let attempt = 1; attempt <= maxRetries; attempt++) {
+//         try {
+//             // Wait for the combobox and click it
+//             await page.locator(inputSelector).click({ clickCount: 2 });
+//             await page.keyboard.press('Backspace');
+
+//             // Type the input data
+//             await page.type(inputSelector, inputData);
+//             await delay(500);
+//             await page.keyboard.press('Enter');
+
+//             // Wait and validate if the input text is contained within the value
+//             // await delay(1000);
+//             const enteredText = await page.$eval(inputSelector, el => el.value);
+
+//             if (enteredText.includes(inputData)) {
+//                 console.log(`Success: ${dataTestId}: ${inputData}`);
+//                 return; // Exit the function if the text is successfully entered
+//             } else {
+//                 console.warn(`Validation failed on attempt ${attempt}: ${enteredText} does not include ${inputData}`);
+//             }
+//         } catch (error) {
+//             console.error(`Attempt ${attempt} failed: ${error.message}`);
+//         }
+
+//         if (attempt < maxRetries) {
+//             await delay(500);
+//             console.log(`Retrying (${attempt + 1}/${maxRetries})...`);
+//             // await delay(1000); // Optional: wait before retrying
+//         }
+//     }
+
+//     throw new Error(`Failed to enter ${inputData} into ${dataTestId} after ${maxRetries} attempts`);
+// }
+
 async function enterDataIntoCombobox(page, dataTestId, inputData, maxRetries = 3) {
     const comboboxSelector = `div[data-testid="${dataTestId}"]`;
     const inputSelector = `${comboboxSelector} input.input-field__input`;
 
+    // Function to check if the inputData is already in the value within parentheses
+    const isDataAlreadyIncluded = async (inputData) => {
+        const currentValue = await page.$eval(inputSelector, el => el.value);
+        const regex = /\((\w{3})\)/; // Regex to match 3-letter strings inside parentheses
+        const match = regex.exec(currentValue);
+        return match && inputData.includes(match[1]);
+    };
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-            // Wait for the combobox and click it
-            await page.locator(inputSelector).click({ clickCount: 3 });
-            await page.keyboard.press('Backspace');
+            const alreadyIncluded = await isDataAlreadyIncluded(inputData);
 
-            // Type the input data
-            await page.type(inputSelector, inputData);
-            await delay(500);
-            await page.keyboard.press('Enter');
+            if (!alreadyIncluded) {
+                // Wait for the combobox and click it
+                await page.locator(inputSelector).click({ clickCount: 2 });
+                await page.keyboard.press('Backspace');
+
+                // Type the input data
+                await page.type(inputSelector, inputData);
+                await delay(500);
+                await page.keyboard.press('Enter');
+            } else {
+                console.log(`Input data "${inputData}" is already included in the value.`);
+            }
 
             // Wait and validate if the input text is contained within the value
-            // await delay(1000);
+            await delay(1000); // Adjust if necessary
             const enteredText = await page.$eval(inputSelector, el => el.value);
 
             if (enteredText.includes(inputData)) {
@@ -45,7 +98,6 @@ async function enterDataIntoCombobox(page, dataTestId, inputData, maxRetries = 3
         if (attempt < maxRetries) {
             await delay(500);
             console.log(`Retrying (${attempt + 1}/${maxRetries})...`);
-            // await delay(1000); // Optional: wait before retrying
         }
     }
 
@@ -112,6 +164,8 @@ function readExcelData(filePath) {
 
 
 (async () => {
+    // Start time
+    const startTime = new Date();
     const browser = await puppeteer.launch({
         headless: false,
         // devtools: true,
@@ -169,6 +223,7 @@ function readExcelData(filePath) {
                 console.log('Clicked Round Trip...');
             }
 
+            // FILL FORMS
             await selectComboboxOption(page, "combobox_Flying with", flyingWith);
             await enterDataIntoCombobox(page, "combobox_Leaving from", leavingFrom);
             await enterDataIntoCombobox(page, "combobox_Going to", goingTo);
@@ -197,8 +252,9 @@ function readExcelData(filePath) {
             if (isResults) {
                 const pageCardData = await page.$$eval('.tabs', (cards, cabinClass) => {
                     return cards.map(card => {
-                        const actionElement = card.querySelector('a[aria-selected="true"]');
+                        const actionElement = card.querySelector('a[title="Earn"]');
                         const action = actionElement ? actionElement.querySelector('.miles-calculator-result__tab-button--text').textContent.trim() : null;
+                        
 
                         const fareDetails = Array.from(document.querySelectorAll('.miles-calculator-result__card-wrapper')).flatMap(wrapper => {
                             const fareTypes = ['special', 'saver', 'flex', 'flexplus'];
@@ -228,8 +284,29 @@ function readExcelData(filePath) {
                                         tierMiles = tierMilesDiv.textContent.trim();
                                     }
 
+                                    // Add Fare Type Prefix
+                                    let prefix = '';
+                                    switch (cabinClass) {
+                                        case 'Economy':
+                                            prefix = 'Economy ';
+                                            break;
+                                        case 'Premium':
+                                            prefix = '';
+                                            break;
+                                        case 'Business':
+                                            prefix = 'Business ';
+                                            break;
+                                        case 'First':
+                                            prefix = 'First ';
+                                            break;
+                                        default:
+                                            prefix = ''; // No prefix if cabinClass is unrecognized
+                                            break;}
+                                    
+                                    const brandedFare = prefix + fareType.charAt(0).toUpperCase() + fareType.slice(1);
+
                                     return {
-                                        brandedFare: fareType.charAt(0).toUpperCase() + fareType.slice(1),
+                                        brandedFare: brandedFare,
                                         skywardMiles,
                                         tierMiles
                                     };
@@ -306,34 +383,76 @@ function readExcelData(filePath) {
         // Write all accumulated data to a single Excel file
 
         if (allData.length > 0) {
+            // const workbook = XLSX.utils.book_new();
+
+            // const actions = [...new Set(allData.map(item => item.action))];
+
+            // actions.forEach(action => {
+            //     const dataForSheet = allData.filter(item => item.action === action);
+            //     const sheetData = dataForSheet.map(item => ({
+            //         'Action': item.action,
+            //         'Flying With': item.flyingWith,
+            //         'Leaving from': item.leavingFrom,
+            //         'Going to': item.goingTo,
+            //         'Date (OW/RT)': item.date,
+            //         'Cabin Class': item.cabinClass,
+            //         'Emirates Skywards Tier': item.skywardTier,
+            //         'Branded Fare': item.brandedFare,
+            //         'Skyward Miles': item.skywardMiles,
+            //         'Tier Miles': item.tierMiles
+            //     }));
+            //     const worksheet = XLSX.utils.json_to_sheet(sheetData);
+            //     XLSX.utils.book_append_sheet(workbook, worksheet, action);
+            // });
+
+            // const fileName = `skywardsMilesData.xlsx`;
+            // XLSX.writeFile(workbook, fileName);
+            // console.log(`Excel file written to ${fileName}`);
+
+            // Define the single action
+            const action = 'Earn';
+
+            // Filter data for the single action
+            const dataForSheet = allData.filter(item => item.action === action);
+
+            // Transform the data into the format you need
+            const sheetData = dataForSheet.map(item => ({
+                // 'Action': item.action,
+                'Direction': item.date,
+                'Airlines': item.flyingWith,
+                'Leaving from': item.leavingFrom,
+                'Going to': item.goingTo,
+                'Cabin Class': item.cabinClass,
+                'Skywards Tier': item.skywardTier,
+                'Branded Fare': item.brandedFare,
+                'Skyward Miles': item.skywardMiles,
+                'Tier Miles': item.tierMiles
+            }));
+
+            // Create a new workbook and add the sheet
             const workbook = XLSX.utils.book_new();
+            const worksheet = XLSX.utils.json_to_sheet(sheetData);
+            XLSX.utils.book_append_sheet(workbook, worksheet, action);
 
-            const actions = [...new Set(allData.map(item => item.action))];
-
-            actions.forEach(action => {
-                const dataForSheet = allData.filter(item => item.action === action);
-                const sheetData = dataForSheet.map(item => ({
-                    'Action': item.action,
-                    'Flying With': item.flyingWith,
-                    'Leaving from': item.leavingFrom,
-                    'Going to': item.goingTo,
-                    'Date (OW/RT)': item.date,
-                    'Cabin Class': item.cabinClass,
-                    'Emirates Skywards Tier': item.skywardTier,
-                    'Branded Fare': item.brandedFare,
-                    'Skyward Miles': item.skywardMiles,
-                    'Tier Miles': item.tierMiles
-                }));
-                const worksheet = XLSX.utils.json_to_sheet(sheetData);
-                XLSX.utils.book_append_sheet(workbook, worksheet, action);
-            });
-
-            const fileName = `skywardsMilesData.xlsx`;
-            XLSX.writeFile(workbook, fileName);
-            console.log(`Excel file written to ${fileName}`);
+            // Write the workbook to a file
+            XLSX.writeFile(workbook, 'ekMilesData.xlsx');
             
             
         }
+
+            // End time
+        const endTime = new Date();
+        
+        // Calculate time elapsed
+        const elapsedTime = (endTime - startTime) / 1000; // Time in seconds
+
+        // Get the number of entries
+        const totalEntries = allData.filter(item => item.action === 'Earn').length;
+
+        console.log(allData)
+        console.log(`Time elapsed: ${elapsedTime} seconds`);
+        console.log(`Total number of entries: ${totalEntries}`);
+
     }
      catch (error) {
         console.error('Error:', error);
