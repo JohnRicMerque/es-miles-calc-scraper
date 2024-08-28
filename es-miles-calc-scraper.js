@@ -13,15 +13,49 @@ async function handleCookiesPopup(page) {
 }
 
 // Function to enter data into input fields
-async function enterDataIntoCombobox(page, dataTestId, inputData) {
+async function enterDataIntoCombobox(page, dataTestId, inputData, maxRetries = 3) {
     const comboboxSelector = `div[data-testid="${dataTestId}"]`;
-    const inputLocator = await page.locator(comboboxSelector).click;
-    // const inputSelector = `${comboboxSelector} input.input-field__input`;
-    await inputLocator.fill(inputData);
-    await delay(500);
-    await page.keyboard.press('Enter');
-    console.log(`${dataTestId}: ${inputData}`);
+    const inputSelector = `${comboboxSelector} input.input-field__input`;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            // Wait for the combobox and click it
+            await page.waitForSelector(comboboxSelector);
+            await page.click(comboboxSelector);
+
+            // Clear existing text (optional)
+            await page.click(inputSelector, { clickCount: 3 });
+            await page.keyboard.press('Backspace');
+
+            // Type the input data
+            await page.type(inputSelector, inputData);
+            await delay(500);
+            await page.keyboard.press('Enter');
+
+            // Wait and validate if the input text is contained within the value
+            // await delay(1000);
+            const enteredText = await page.$eval(inputSelector, el => el.value);
+
+            if (enteredText.includes(inputData)) {
+                console.log(`Success: ${dataTestId}: ${inputData}`);
+                return; // Exit the function if the text is successfully entered
+            } else {
+                console.warn(`Validation failed on attempt ${attempt}: ${enteredText} does not include ${inputData}`);
+            }
+        } catch (error) {
+            console.error(`Attempt ${attempt} failed: ${error.message}`);
+        }
+
+        if (attempt < maxRetries) {
+            console.log(`Retrying (${attempt + 1}/${maxRetries})...`);
+            // await delay(1000); // Optional: wait before retrying
+        }
+    }
+
+    throw new Error(`Failed to enter ${inputData} into ${dataTestId} after ${maxRetries} attempts`);
 }
+
+
 
 // Function to select an option from a dropdown menu
 async function selectComboboxOption(page, comboboxTestId, optionText) {
@@ -84,8 +118,9 @@ function readExcelData(filePath) {
 
             const homeUrl = 'https://www.emirates.com/ph/english/skywards/miles-calculator/';
             await page.goto(homeUrl);
+            await page.waitForSelector('.skywards-miles-calculator__search-widget__wrapper', { visible: true });
             console.log('Navigated to Emirates mileage calculator...');
-            await delay(1000);
+            await delay(250);
 
             await handleCookiesPopup(page);
 
