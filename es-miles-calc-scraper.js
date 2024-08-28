@@ -43,6 +43,7 @@ async function enterDataIntoCombobox(page, dataTestId, inputData, maxRetries = 3
         }
 
         if (attempt < maxRetries) {
+            await delay(500);
             console.log(`Retrying (${attempt + 1}/${maxRetries})...`);
             // await delay(1000); // Optional: wait before retrying
         }
@@ -147,6 +148,7 @@ function readExcelData(filePath) {
         let allData = []; // Array to store all results
 
         for (const rowData of excelData) {
+            let flattenedData = [];
             const flyingWith = rowData.flyingWith;
             const leavingFrom = rowData.leavingFrom;
             const goingTo = rowData.goingTo;
@@ -154,6 +156,8 @@ function readExcelData(filePath) {
             const emiratesSkywardsTier = rowData.emiratesSkywardsTier;
             const oneWayOrRoundtrip = rowData.oneWayOrRoundtrip;
 
+            // EXTRACTION HAPPENS HERE
+            try{
             // Click the appropriate radio button based on the oneWayOrRoundtrip variable
             if (oneWayOrRoundtrip === "One Way") {
                 await page.click('input.radio-button__input#OW0');
@@ -181,7 +185,7 @@ function readExcelData(filePath) {
 
             await waitForSelectors;
 
-            let flattenedData = [];
+            
 
             const isResults = await page.$('.tabs');
             const isAccessDenied = await page.$('h1:not([class]):not([id])');
@@ -279,6 +283,24 @@ function readExcelData(filePath) {
             // Accumulate data for each row
             allData = allData.concat(flattenedData);
             await page.locator('a[data-id="pagebody_link"][data-link="Back to results"]').click();
+            } catch {
+            // ADD ERROR OCCURED
+            flattenedData.push({
+                action: "Earn",
+                flyingWith: flyingWith,
+                leavingFrom: leavingFrom,
+                goingTo: goingTo,
+                date: oneWayOrRoundtrip,
+                cabinClass: cabinClass,
+                brandedFare: "Error",
+                skywardTier: "Error",
+                skywardMiles: "Error",
+                tierMiles: "Error"
+            })
+
+            allData = allData.concat(flattenedData);
+            
+        }
         }
 
         // Write all accumulated data to a single Excel file
