@@ -54,7 +54,7 @@ async function handleCookiesPopup(page) {
 //     throw new Error(`Failed to enter ${inputData} into ${dataTestId} after ${maxRetries} attempts`);
 // }
 
-async function enterDataIntoCombobox(page, dataTestId, inputData, maxRetries = 3) {
+async function enterDataIntoCombobox(page, dataTestId, inputData, maxRetries = 2) {
     const comboboxSelector = `div[data-testid="${dataTestId}"]`;
     const inputSelector = `${comboboxSelector} input.input-field__input`;
 
@@ -136,7 +136,7 @@ async function selectComboboxOption(page, comboboxTestId, optionText) {
             option.click();
         }
     }, optionText);
-    await delay(1000);
+    await delay(500);
 }
 
 
@@ -193,7 +193,7 @@ function formatDateTime(date) {
     // });
 
     const browser = await puppeteer.launch({
-        headless: false,
+        headless: true,
         // devtools: true,
         defaultViewport: null,
         args: [
@@ -215,7 +215,7 @@ function formatDateTime(date) {
     });
 
     try {
-        const excelFilePath = 'inputData_R5.xlsx'; // Replace with your actual Excel file path
+        const excelFilePath = 'inputData_R10.xlsx'; // Replace with your actual Excel file path
         const excelData = readExcelData(excelFilePath);
         const page = await browser.newPage();
         await page.setDefaultNavigationTimeout(60000);
@@ -286,7 +286,7 @@ function formatDateTime(date) {
                         
 
                         const fareDetails = Array.from(document.querySelectorAll('.miles-calculator-result__card-wrapper')).flatMap(wrapper => {
-                            const fareTypes = ['special', 'saver', 'flex', 'flexplus'];
+                            const fareTypes = ['flexplus','flex','saver', 'special'];
                             return fareTypes.map(fareType => {
                                 // Here we strictly use input data for cabin class i.e. premiumeconomy must have no space thus the regex, input must not have Class words in excel, it was handled in the input for Cabin Class in the form page
                                 const fareDiv = wrapper.querySelector(`.miles-card__card.miles-card__ek-${cabinClass.toLowerCase().replace(/\s+/g, '')}-${fareType}`);
@@ -398,10 +398,10 @@ function formatDateTime(date) {
                 goingTo: goingTo,
                 date: oneWayOrRoundtrip,
                 cabinClass: cabinClass,
-                brandedFare: "Error",
-                skywardTier: "Error",
-                skywardMiles: "Error",
-                tierMiles: "Error"
+                brandedFare: "Not Existing",
+                skywardTier: "Not Existing",
+                skywardMiles: "Not Existing",
+                tierMiles: "Not Existing"
             })
 
             allData = allData.concat(flattenedData);
