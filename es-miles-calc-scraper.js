@@ -106,8 +106,6 @@ async function enterDataIntoCombobox(page, dataTestId, inputData, maxRetries = 3
     throw new Error(`Failed to enter ${inputData} into ${dataTestId} after ${maxRetries} attempts`);
 }
 
-
-
 // Function to select an option from a dropdown menu
 // async function selectComboboxOption(page, comboboxTestId, optionText) {
 //     await page.click(`div[data-testid="${comboboxTestId}"]`);
@@ -178,6 +176,22 @@ function formatDateTime(date) {
 (async () => {
     // Start time
     const startTime = new Date();
+    
+    // const fs = require('fs');
+    let randomProxy
+
+    // Read the JSON file
+    // fs.readFile('proxies_free.json', 'utf8', (err, data) => {
+    // if (err) {
+    //     console.error('Error reading the file:', err);
+    //     return;
+    // }
+    // const entries = JSON.parse(data);
+    // const proxyList = entries.map(entry => entry.ip);
+    // const randomProxy = proxyList[Math.floor(Math.random() * proxyList.length)];
+
+    // });
+
     const browser = await puppeteer.launch({
         headless: false,
         // devtools: true,
@@ -195,12 +209,13 @@ function formatDateTime(date) {
             '--disable-web-security',
             '--disable-features=IsolateOrigins',
             '--disable-site-isolation-trials',
+            // `--proxy-server=${randomProxy}`,
             '--disable-features=BlockInsecurePrivateNetworkRequests'
         ],
     });
 
     try {
-        const excelFilePath = 'inputData.xlsx'; // Replace with your actual Excel file path
+        const excelFilePath = 'inputData_R5.xlsx'; // Replace with your actual Excel file path
         const excelData = readExcelData(excelFilePath);
         const page = await browser.newPage();
         await page.setDefaultNavigationTimeout(60000);
@@ -225,15 +240,17 @@ function formatDateTime(date) {
             // EXTRACTION HAPPENS HERE
             try{
             // Click the appropriate radio button based on the oneWayOrRoundtrip variable
-            if (oneWayOrRoundtrip === "One Way") {
-                await page.click('input.radio-button__input#OW0');
+            // if (oneWayOrRoundtrip === "One Way") {
+                // console.log('Clicking One Way...');
+                await page.locator('input.radio-button__input#OW0').click();
+                // await page.click('input.radio-button__input#OW0');
                 await delay(500);
                 console.log('Clicked One Way...');
-            } else if (oneWayOrRoundtrip === "Round Trip") {
-                await page.click('input.radio-button__input#RT1');
-                await delay(500);
-                console.log('Clicked Round Trip...');
-            }
+            // } else if (oneWayOrRoundtrip === "Round Trip") {
+            //     await page.click('input.radio-button__input#RT1');
+            //     await delay(500);
+            //     console.log('Clicked Round Trip...');
+            // }
 
             // FILL FORMS
             await selectComboboxOption(page, "combobox_Flying with", flyingWith);
@@ -458,13 +475,15 @@ function formatDateTime(date) {
         const endTime = new Date();
         
         // Calculate time elapsed
-        const elapsedTime = (endTime - startTime) / 1000; // Time in seconds
+        const elapsedTimeSeconds = (endTime - startTime) / 1000; // Time in seconds
+        const elapsedTimeMinutes = (endTime - startTime) / 60000; // Time in minutes
 
         // Get the number of entries
         const totalEntries = allData.filter(item => item.action === 'Earn').length;
 
         // console.log(allData)
-        console.log(`Time elapsed: ${elapsedTime} seconds`);
+        console.log(`Time elapsed: ${elapsedTimeSeconds} seconds`);
+        console.log(`Time elapsed: ${elapsedTimeMinutes} minutes`);
         console.log(`Total number of entries: ${totalEntries}`);
 
     }
