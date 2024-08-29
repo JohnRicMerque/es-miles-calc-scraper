@@ -162,6 +162,16 @@ function readExcelData(filePath) {
     return jsonData;
 }
 
+function formatDateTime(date) {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-based
+    const day = date.getDate().toString().padStart(2, '0');
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
+    return `${year}-${month}-${day}-${hours}-${minutes}`;
+}
+
 
 (async () => {
     // Start time
@@ -433,9 +443,11 @@ function readExcelData(filePath) {
             const workbook = XLSX.utils.book_new();
             const worksheet = XLSX.utils.json_to_sheet(sheetData);
             XLSX.utils.book_append_sheet(workbook, worksheet, action);
-
+            const formattedDateTime = formatDateTime(startTime);
+            const filename = `ekMilesData_${formattedDateTime}.xlsx`;
             // Write the workbook to a file
-            XLSX.writeFile(workbook, 'ekMilesData.xlsx');
+            XLSX.writeFile(workbook, filename);
+            console.log(`Excel file written to ${filename}`);
             
             
         }
@@ -449,7 +461,7 @@ function readExcelData(filePath) {
         // Get the number of entries
         const totalEntries = allData.filter(item => item.action === 'Earn').length;
 
-        console.log(allData)
+        // console.log(allData)
         console.log(`Time elapsed: ${elapsedTime} seconds`);
         console.log(`Total number of entries: ${totalEntries}`);
 
