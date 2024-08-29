@@ -2,6 +2,8 @@ const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
 const XLSX = require('xlsx');
+const anonymizeUaPlugin = require('puppeteer-extra-plugin-anonymize-ua');
+puppeteer.use(anonymizeUaPlugin());
 
 // Function to handle cookies window
 async function handleCookiesPopup(page) {
