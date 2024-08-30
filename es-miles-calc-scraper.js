@@ -215,7 +215,7 @@ function formatDateTime(date) {
     });
 
     try {
-        const excelFilePath = 'inputData_R10.xlsx'; // Replace with your actual Excel file path
+        const excelFilePath = 'inputData_R20.xlsx'; // Replace with your actual Excel file path
         const excelData = readExcelData(excelFilePath);
         const page = await browser.newPage();
         await page.setDefaultNavigationTimeout(60000);
