@@ -169,7 +169,7 @@ function formatDateTime(date) {
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
     const seconds = date.getSeconds().toString().padStart(2, '0');
-    return `${year}-${month}-${day}-${hours}-${minutes}`;
+    return `${month}${day}${year}-${hours}${minutes}`;
 }
 
 
@@ -193,7 +193,7 @@ function formatDateTime(date) {
     // });
 
     const browser = await puppeteer.launch({
-        headless: true,
+        headless: false,
         // devtools: true,
         defaultViewport: null,
         args: [
@@ -215,7 +215,7 @@ function formatDateTime(date) {
     });
 
     try {
-        const excelFilePath = 'inputData_R20.xlsx'; // Replace with your actual Excel file path
+        const excelFilePath = 'LIS/Input/inputData_LIS3.xlsx'; // Replace with your actual Excel file path
         const excelData = readExcelData(excelFilePath);
         const page = await browser.newPage();
         await page.setDefaultNavigationTimeout(60000);
@@ -263,8 +263,8 @@ function formatDateTime(date) {
             console.log('Waiting for results...');
 
             const waitForSelectors = Promise.race([
-                page.waitForSelector('.tabs', { timeout: 90000 }),
-                page.waitForSelector('h1:not([class]):not([id])', { timeout: 90000 })
+                page.waitForSelector('.tabs', { timeout: 40000 }),
+                page.waitForSelector('h1:not([class]):not([id])', { timeout: 40000 })
             ]);
 
             await waitForSelectors;
@@ -398,10 +398,10 @@ function formatDateTime(date) {
                 goingTo: goingTo,
                 date: oneWayOrRoundtrip,
                 cabinClass: cabinClass,
-                brandedFare: "Not Existing",
-                skywardTier: "Not Existing",
-                skywardMiles: "Not Existing",
-                tierMiles: "Not Existing"
+                brandedFare: "None",
+                skywardTier: "None",
+                skywardMiles: "None",
+                tierMiles: "None"
             })
 
             allData = allData.concat(flattenedData);
@@ -463,7 +463,7 @@ function formatDateTime(date) {
             const worksheet = XLSX.utils.json_to_sheet(sheetData);
             XLSX.utils.book_append_sheet(workbook, worksheet, action);
             const formattedDateTime = formatDateTime(startTime);
-            const filename = `ekMilesData_${formattedDateTime}.xlsx`;
+            const filename = `EKS_Route_LIS_${formattedDateTime}.xlsx`;
             // Write the workbook to a file
             XLSX.writeFile(workbook, filename);
             console.log(`Excel file written to ${filename}`);
