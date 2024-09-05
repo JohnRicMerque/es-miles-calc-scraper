@@ -1,8 +1,10 @@
 const puppeteer = require('puppeteer-extra');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-puppeteer.use(StealthPlugin());
 const XLSX = require('xlsx');
 const anonymizeUaPlugin = require('puppeteer-extra-plugin-anonymize-ua');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+const fs = require('fs');
+const path = require('path');
+puppeteer.use(StealthPlugin());
 puppeteer.use(anonymizeUaPlugin());
 
 // Function to handle cookies window
@@ -13,46 +15,6 @@ async function handleCookiesPopup(page) {
         console.log('Clicked the cookies accept button...');
     }
 }
-
-// Function to enter data into input fields
-// async function enterDataIntoCombobox(page, dataTestId, inputData, maxRetries = 3) {
-//     const comboboxSelector = `div[data-testid="${dataTestId}"]`;
-//     const inputSelector = `${comboboxSelector} input.input-field__input`;
-
-//     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-//         try {
-//             // Wait for the combobox and click it
-//             await page.locator(inputSelector).click({ clickCount: 2 });
-//             await page.keyboard.press('Backspace');
-
-//             // Type the input data
-//             await page.type(inputSelector, inputData);
-//             await delay(500);
-//             await page.keyboard.press('Enter');
-
-//             // Wait and validate if the input text is contained within the value
-//             // await delay(1000);
-//             const enteredText = await page.$eval(inputSelector, el => el.value);
-
-//             if (enteredText.includes(inputData)) {
-//                 console.log(`Success: ${dataTestId}: ${inputData}`);
-//                 return; // Exit the function if the text is successfully entered
-//             } else {
-//                 console.warn(`Validation failed on attempt ${attempt}: ${enteredText} does not include ${inputData}`);
-//             }
-//         } catch (error) {
-//             console.error(`Attempt ${attempt} failed: ${error.message}`);
-//         }
-
-//         if (attempt < maxRetries) {
-//             await delay(500);
-//             console.log(`Retrying (${attempt + 1}/${maxRetries})...`);
-//             // await delay(1000); // Optional: wait before retrying
-//         }
-//     }
-
-//     throw new Error(`Failed to enter ${inputData} into ${dataTestId} after ${maxRetries} attempts`);
-// }
 
 async function enterDataIntoCombobox(page, dataTestId, inputData, maxRetries = 2) {
     const comboboxSelector = `div[data-testid="${dataTestId}"]`;
@@ -106,19 +68,6 @@ async function enterDataIntoCombobox(page, dataTestId, inputData, maxRetries = 2
     throw new Error(`Failed to enter ${inputData} into ${dataTestId} after ${maxRetries} attempts`);
 }
 
-// Function to select an option from a dropdown menu
-// async function selectComboboxOption(page, comboboxTestId, optionText) {
-//     await page.click(`div[data-testid="${comboboxTestId}"]`);
-//     await page.waitForSelector('button.auto-suggest__item', { visible: true });
-//     await page.evaluate((text) => {
-//         const options = Array.from(document.querySelectorAll('button.auto-suggest__item'));
-//         const option = options.find(el => el.textContent.trim() === text);
-//         if (option) {
-//             option.click();
-//         }
-//     }, optionText);
-//     await delay(1000);
-// }
 async function selectComboboxOption(page, comboboxTestId, optionText) {
     await page.click(`div[data-testid="${comboboxTestId}"]`);
     await page.waitForSelector('button.auto-suggest__item', { visible: true });
@@ -176,26 +125,8 @@ function formatDateTime(date) {
 (async () => {
     // Start time
     const startTime = new Date();
-    
-    // const fs = require('fs');
-    let randomProxy
-
-    // Read the JSON file
-    // fs.readFile('proxies_free.json', 'utf8', (err, data) => {
-    // if (err) {
-    //     console.error('Error reading the file:', err);
-    //     return;
-    // }
-    // const entries = JSON.parse(data);
-    // const proxyList = entries.map(entry => entry.ip);
-    // const randomProxy = proxyList[Math.floor(Math.random() * proxyList.length)];
-
-    // });
-
     const browser = await puppeteer.launch({
         headless: false,
-        // devtools: true,
-        defaultViewport: null,
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -215,7 +146,11 @@ function formatDateTime(date) {
     });
 
     try {
-        const excelFilePath = 'EBB/Input/inputData_EBB2.xlsx'; // Replace with your actual Excel file path
+        let route = "EBB"
+        let batch = "Missing"
+
+        const excelFilePath = `${route}/Input/inputData_${route}${batch}.xlsx`;
+
         const excelData = readExcelData(excelFilePath);
         const page = await browser.newPage();
         await page.setDefaultNavigationTimeout(60000);
@@ -225,8 +160,8 @@ function formatDateTime(date) {
         console.log('Navigated to Emirates mileage calculator...');
         await delay(250);
         await handleCookiesPopup(page);
-
         let allData = []; // Array to store all results
+        
 
         for (const rowData of excelData) {
             let flattenedData = [];
@@ -268,8 +203,6 @@ function formatDateTime(date) {
             ]);
 
             await waitForSelectors;
-
-            
 
             const isResults = await page.$('.tabs');
             const isAccessDenied = await page.$('h1:not([class]):not([id])');
@@ -333,6 +266,7 @@ function formatDateTime(date) {
                                             break;}
                                     
                                     const brandedFare = prefix + fareType.charAt(0).toUpperCase() + fareType.slice(1);
+                                    console.log('Sucessfully scraped the data...');
 
                                     return {
                                         brandedFare: brandedFare,
@@ -412,33 +346,6 @@ function formatDateTime(date) {
         // Write all accumulated data to a single Excel file
 
         if (allData.length > 0) {
-            // const workbook = XLSX.utils.book_new();
-
-            // const actions = [...new Set(allData.map(item => item.action))];
-
-            // actions.forEach(action => {
-            //     const dataForSheet = allData.filter(item => item.action === action);
-            //     const sheetData = dataForSheet.map(item => ({
-            //         'Action': item.action,
-            //         'Flying With': item.flyingWith,
-            //         'Leaving from': item.leavingFrom,
-            //         'Going to': item.goingTo,
-            //         'Date (OW/RT)': item.date,
-            //         'Cabin Class': item.cabinClass,
-            //         'Emirates Skywards Tier': item.skywardTier,
-            //         'Branded Fare': item.brandedFare,
-            //         'Skyward Miles': item.skywardMiles,
-            //         'Tier Miles': item.tierMiles
-            //     }));
-            //     const worksheet = XLSX.utils.json_to_sheet(sheetData);
-            //     XLSX.utils.book_append_sheet(workbook, worksheet, action);
-            // });
-
-            // const fileName = `skywardsMilesData.xlsx`;
-            // XLSX.writeFile(workbook, fileName);
-            // console.log(`Excel file written to ${fileName}`);
-
-            // Define the single action
             const action = 'Earn';
 
             // Filter data for the single action
@@ -458,20 +365,29 @@ function formatDateTime(date) {
                 'Tier Miles': item.tierMiles
             }));
 
+
             // Create a new workbook and add the sheet
             const workbook = XLSX.utils.book_new();
             const worksheet = XLSX.utils.json_to_sheet(sheetData);
             XLSX.utils.book_append_sheet(workbook, worksheet, action);
             const formattedDateTime = formatDateTime(startTime);
-            const filename = `EKS_Route_PER_${formattedDateTime}.xlsx`;
-            // Write the workbook to a file
-            XLSX.writeFile(workbook, filename);
-            console.log(`Excel file written to ${filename}`);
+            const filename = `EKS_Route_${route}${batch}_${formattedDateTime}.xlsx`;
+
+            // Create the 'Data' folder if it doesn't exist
+            const folderPath = `./${route}/Data`;
+            if (!fs.existsSync(folderPath)) {
+            fs.mkdirSync(folderPath);
+            }
+
+            // Write the workbook to a file in the 'Data' folder
+            const filePath = path.join(folderPath, filename);
+            XLSX.writeFile(workbook, filePath);
+            console.log(`Excel file written to ${filePath}`);
             
             
         }
 
-            // End time
+        // End time
         const endTime = new Date();
         
         // Calculate time elapsed
