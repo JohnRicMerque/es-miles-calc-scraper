@@ -88,7 +88,6 @@ async function selectComboboxOption(page, comboboxTestId, optionText) {
     await delay(500);
 }
 
-
 function delay(time) {
     return new Promise(resolve => setTimeout(resolve, time));
 }
@@ -140,17 +139,16 @@ function formatDateTime(date) {
             '--disable-web-security',
             '--disable-features=IsolateOrigins',
             '--disable-site-isolation-trials',
-            // `--proxy-server=${randomProxy}`,
             '--disable-features=BlockInsecurePrivateNetworkRequests'
         ],
     });
+    
+    let route = "PER"
+    let batch = "Missing"
+    let allData = [];
 
     try {
-        let route = "EBB"
-        let batch = "Missing"
-
         const excelFilePath = `${route}/Input/inputData_${route}${batch}.xlsx`;
-
         const excelData = readExcelData(excelFilePath);
         const page = await browser.newPage();
         await page.setDefaultNavigationTimeout(60000);
@@ -159,9 +157,7 @@ function formatDateTime(date) {
         await page.waitForSelector('.skywards-miles-calculator__search-widget__wrapper', { visible: true });
         console.log('Navigated to Emirates mileage calculator...');
         await delay(250);
-        await handleCookiesPopup(page);
-        let allData = []; // Array to store all results
-        
+        await handleCookiesPopup(page);        
 
         for (const rowData of excelData) {
             let flattenedData = [];
@@ -339,69 +335,13 @@ function formatDateTime(date) {
             })
 
             allData = allData.concat(flattenedData);
-            
-        }
-        }
-
-        // Write all accumulated data to a single Excel file
-
-        if (allData.length > 0) {
-            const action = 'Earn';
-
-            // Filter data for the single action
-            const dataForSheet = allData.filter(item => item.action === action);
-
-            // Transform the data into the format
-            const sheetData = dataForSheet.map(item => ({
-                // 'Action': item.action,
-                'Direction': item.date,
-                'Airline': item.flyingWith,
-                'Leaving from': item.leavingFrom,
-                'Going to': item.goingTo,
-                'Cabin Class': item.cabinClass,
-                'Skywards Tier': item.skywardTier,
-                'Branded Fare': item.brandedFare,
-                'Skyward Miles': item.skywardMiles,
-                'Tier Miles': item.tierMiles
-            }));
-
-
-            // Create a new workbook and add the sheet
-            const workbook = XLSX.utils.book_new();
-            const worksheet = XLSX.utils.json_to_sheet(sheetData);
-            XLSX.utils.book_append_sheet(workbook, worksheet, action);
-            const formattedDateTime = formatDateTime(startTime);
-            const filename = `EKS_Route_${route}${batch}_${formattedDateTime}.xlsx`;
-
-            // Create the 'Data' folder if it doesn't exist
-            const folderPath = `./${route}/Data`;
-            if (!fs.existsSync(folderPath)) {
-            fs.mkdirSync(folderPath);
+            if (browser.isConnected() === false) {
+                throw new Error('Browser manually closed by user');
             }
-
-            // Write the workbook to a file in the 'Data' folder
-            const filePath = path.join(folderPath, filename);
-            XLSX.writeFile(workbook, filePath);
-            console.log(`Excel file written to ${filePath}`);
-            
-            
+        }
         }
 
-        // End time
-        const endTime = new Date();
         
-        // Calculate time elapsed
-        const elapsedTimeSeconds = (endTime - startTime) / 1000; // Time in seconds
-        const elapsedTimeMinutes = (endTime - startTime) / 60000; // Time in minutes
-
-        // Get the number of entries
-        const totalEntries = allData.filter(item => item.action === 'Earn').length;
-
-        // console.log(allData)
-        console.log(`Time elapsed: ${elapsedTimeSeconds} seconds`);
-        console.log(`Time elapsed: ${elapsedTimeMinutes} minutes`);
-        console.log(`Total number of entries: ${totalEntries}`);
-
     }
      catch (error) {
         console.error('Error:', error);
@@ -409,4 +349,62 @@ function formatDateTime(date) {
     } finally {
         await browser.close();
     }
+
+    // Write data to an Excel file
+
+    if (allData.length > 0) {
+        const action = 'Earn';
+
+        // Filter data for the single action
+        const dataForSheet = allData.filter(item => item.action === action);
+
+        // Transform the data into the format
+        const sheetData = dataForSheet.map(item => ({
+            // 'Action': item.action,
+            'Direction': item.date,
+            'Airline': item.flyingWith,
+            'Leaving from': item.leavingFrom,
+            'Going to': item.goingTo,
+            'Cabin Class': item.cabinClass,
+            'Skywards Tier': item.skywardTier,
+            'Branded Fare': item.brandedFare,
+            'Skyward Miles': item.skywardMiles,
+            'Tier Miles': item.tierMiles
+        }));
+
+
+        // Create a new workbook and add the sheet
+        const workbook = XLSX.utils.book_new();
+        const worksheet = XLSX.utils.json_to_sheet(sheetData);
+        XLSX.utils.book_append_sheet(workbook, worksheet, action);
+        const formattedDateTime = formatDateTime(startTime);
+        const filename = `EKS_Route_${route}${batch}_${formattedDateTime}.xlsx`;
+
+        // Create the 'Data' folder if it doesn't exist
+        const folderPath = `./${route}/Data`;
+        if (!fs.existsSync(folderPath)) {
+        fs.mkdirSync(folderPath);
+        }
+
+        // Write the workbook to a file in the 'Data' folder
+        const filePath = path.join(folderPath, filename);
+        XLSX.writeFile(workbook, filePath);
+        console.log(`Excel file written to ${filePath}`);
+        
+        
+    }
+    // End time
+    const endTime = new Date();
+    
+    // Calculate time elapsed
+    const elapsedTimeSeconds = (endTime - startTime) / 1000; // Time in seconds
+    const elapsedTimeMinutes = (endTime - startTime) / 60000; // Time in minutes
+
+    // Get the number of entries
+    const totalEntries = allData.filter(item => item.action === 'Earn').length;
+    console.log('=========================================================================');
+    console.log(`Time elapsed: ${elapsedTimeSeconds} seconds`);
+    console.log(`Time elapsed: ${elapsedTimeMinutes} minutes`);
+    console.log(`Total number of entries: ${totalEntries}`);
+    console.log('=========================================================================');
 })();
