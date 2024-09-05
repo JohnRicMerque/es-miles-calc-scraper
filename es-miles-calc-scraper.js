@@ -215,7 +215,7 @@ function formatDateTime(date) {
     });
 
     try {
-        const excelFilePath = 'LIS/Input/inputData_LIS3.xlsx'; // Replace with your actual Excel file path
+        const excelFilePath = 'EBB/Input/inputData_EBB1.xlsx'; // Replace with your actual Excel file path
         const excelData = readExcelData(excelFilePath);
         const page = await browser.newPage();
         await page.setDefaultNavigationTimeout(60000);
@@ -444,11 +444,11 @@ function formatDateTime(date) {
             // Filter data for the single action
             const dataForSheet = allData.filter(item => item.action === action);
 
-            // Transform the data into the format you need
+            // Transform the data into the format
             const sheetData = dataForSheet.map(item => ({
                 // 'Action': item.action,
                 'Direction': item.date,
-                'Airlines': item.flyingWith,
+                'Airline': item.flyingWith,
                 'Leaving from': item.leavingFrom,
                 'Going to': item.goingTo,
                 'Cabin Class': item.cabinClass,
@@ -463,7 +463,7 @@ function formatDateTime(date) {
             const worksheet = XLSX.utils.json_to_sheet(sheetData);
             XLSX.utils.book_append_sheet(workbook, worksheet, action);
             const formattedDateTime = formatDateTime(startTime);
-            const filename = `EKS_Route_LIS_${formattedDateTime}.xlsx`;
+            const filename = `EKS_Route_PER_${formattedDateTime}.xlsx`;
             // Write the workbook to a file
             XLSX.writeFile(workbook, filename);
             console.log(`Excel file written to ${filename}`);
