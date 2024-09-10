@@ -143,8 +143,11 @@ function formatDateTime(date) {
         ],
     });
     
-    let route = "EWR"
-    let batch = "1"
+    // Set Filename / filepath
+    let route = "LHR"
+    let batch = "test"
+
+
     let allData = [];
 
     try {
@@ -173,6 +176,7 @@ function formatDateTime(date) {
             // Click the appropriate radio button based on the oneWayOrRoundtrip variable
             // if (oneWayOrRoundtrip === "One Way") {
                 // console.log('Clicking One Way...');
+                await page.locator('input.radio-button__input#OW0').click();
                 await page.locator('input.radio-button__input#OW0').click();
                 // await page.click('input.radio-button__input#OW0');
                 await delay(500);
@@ -328,8 +332,8 @@ function formatDateTime(date) {
                 goingTo: goingTo,
                 date: oneWayOrRoundtrip,
                 cabinClass: cabinClass,
-                brandedFare: "None",
-                skywardTier: "None",
+                brandedFare: "None", // to edit
+                skywardTier: "None", // to edit
                 skywardMiles: "None",
                 tierMiles: "None"
             })
